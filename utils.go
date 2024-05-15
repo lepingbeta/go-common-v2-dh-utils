@@ -1,6 +1,19 @@
+/*
+ * @Author       : Symphony zhangleping@cezhiqiu.com
+ * @Date         : 2024-05-08 08:09:45
+ * @LastEditors  : Symphony zhangleping@cezhiqiu.com
+ * @LastEditTime : 2024-05-15 12:36:08
+ * @FilePath     : /v2/go-common-v2-dh-utils/utils.go
+ * @Description  :
+ *
+ * Copyright (c) 2024 by 大合前研, All Rights Reserved.
+ */
 package utils
 
-import "go.mongodb.org/mongo-driver/bson"
+import (
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 func IsElementInSlice[T comparable](element T, slice []T) bool {
 	for _, e := range slice {
@@ -26,4 +39,9 @@ func Struct2BsonD(doc interface{}) (bson.D, error) {
 	}
 
 	return bsonDoc, nil
+}
+
+func ObjectIDFromHex(s string) primitive.ObjectID {
+	objId, _ := primitive.ObjectIDFromHex(s)
+	return objId
 }

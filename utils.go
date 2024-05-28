@@ -2,8 +2,8 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-05-08 08:09:45
  * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-05-22 20:35:40
- * @FilePath     : /hecos-v2-api/data/mycode/dahe/go-common/v2/go-common-v2-dh-utils/utils.go
+ * @LastEditTime : 2024-05-28 17:01:04
+ * @FilePath     : /v2/go-common-v2-dh-utils/utils.go
  * @Description  :
  *
  * Copyright (c) 2024 by 大合前研, All Rights Reserved.
@@ -61,4 +61,17 @@ func Struct2BsonM(doc interface{}) (bson.M, error) {
 func ObjectIDFromHex(s string) primitive.ObjectID {
 	objId, _ := primitive.ObjectIDFromHex(s)
 	return objId
+}
+
+// FilterBsonM 函数接受原始 bson.M 数据和要保留的字段列表，
+// 返回一个新的 bson.M 只包含指定的字段。
+// 示例	keepFields := []string{"name", "email"}
+func FilterBsonM(data bson.M, keepFields []string) bson.M {
+	filteredData := bson.M{}
+	for _, key := range keepFields {
+		if value, ok := data[key]; ok {
+			filteredData[key] = value
+		}
+	}
+	return filteredData
 }

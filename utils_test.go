@@ -2,7 +2,7 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-05-08 08:09:45
  * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-05-08 08:38:00
+ * @LastEditTime : 2024-05-28 17:00:24
  * @FilePath     : /v2/go-common-v2-dh-utils/utils_test.go
  * @Description  :
  *
@@ -15,6 +15,7 @@ import (
 
 	dhjson "github.com/lepingbeta/go-common-v2-dh-json"
 	dhlog "github.com/lepingbeta/go-common-v2-dh-log"
+	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -83,4 +84,44 @@ func areBsonDEqual(d1, d2 bson.D) bool {
 		}
 	}
 	return true
+}
+
+// TestFilterBsonM 是测试 FilterBsonM 函数的测试函数
+func TestFilterBsonM(t *testing.T) {
+	// 原始数据
+	data := bson.M{
+		"name":    "John Doe",
+		"age":     30,
+		"email":   "john@example.com",
+		"address": "123 Main St",
+	}
+
+	// 指定要保留的字段
+	keepFields := []string{"name", "email"}
+
+	// 调用 FilterBsonM 函数
+	filteredData := FilterBsonM(data, keepFields)
+
+	// 期望的结果
+	expected := bson.M{
+		"name":  "John Doe",
+		"email": "john@example.com",
+	}
+
+	// 使用 assert 包来验证结果
+	assert.Equal(t, expected, filteredData, "Filtered data does not match expected result")
+
+	// 测试不包含任何字段的情况
+	noFields := []string{}
+	filteredDataEmpty := FilterBsonM(data, noFields)
+	expectedEmpty := bson.M{}
+	assert.Equal(t, expectedEmpty, filteredDataEmpty, "Expected empty bson.M when no fields are specified")
+
+	// 测试包含不存在字段的情况
+	extraFields := []string{"name", "phone"}
+	filteredDataExtra := FilterBsonM(data, extraFields)
+	expected2 := bson.M{
+		"name": "John Doe",
+	}
+	assert.Equal(t, expected2, filteredDataExtra, "Filtered data should ignore non-existing fields")
 }

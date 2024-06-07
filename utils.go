@@ -2,7 +2,7 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-05-08 08:09:45
  * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-05-28 17:01:04
+ * @LastEditTime : 2024-06-07 17:45:41
  * @FilePath     : /v2/go-common-v2-dh-utils/utils.go
  * @Description  :
  *
@@ -11,8 +11,10 @@
 package utils
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
+	"runtime"
 )
 
 func IsElementInSlice[T comparable](element T, slice []T) bool {
@@ -24,54 +26,42 @@ func IsElementInSlice[T comparable](element T, slice []T) bool {
 	return false
 }
 
-func Struct2BsonD(doc interface{}) (bson.D, error) {
-	// 将结构体编码为BSON字节序列
-	data, err := bson.Marshal(doc)
+// 生成随机的Access ID，长度为n
+func GenerateAccessID(n int) (string, error) {
+	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	var bytes = make([]byte, n)
+	_, err := rand.Read(bytes)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-
-	// 将BSON字节序列解码为bson.D
-	var bsonDoc bson.D
-	err = bson.Unmarshal(data, &bsonDoc)
-	if err != nil {
-		return nil, err
+	for i, b := range bytes {
+		bytes[i] = alphanum[b%byte(len(alphanum))]
 	}
-
-	return bsonDoc, nil
+	return string(bytes), nil
 }
 
-func Struct2BsonM(doc interface{}) (bson.M, error) {
-	// 将结构体编码为BSON字节序列
-	data, err := bson.Marshal(doc)
+// 生成安全的Access Secret
+func GenerateAccessSecret() (string, error) {
+	bytes := make([]byte, 32) // 32字节的随机数
+	_, err := rand.Read(bytes)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-
-	// 将BSON字节序列解码为bson.D
-	var bsonDoc bson.M
-	err = bson.Unmarshal(data, &bsonDoc)
-	if err != nil {
-		return nil, err
-	}
-
-	return bsonDoc, nil
+	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
-func ObjectIDFromHex(s string) primitive.ObjectID {
-	objId, _ := primitive.ObjectIDFromHex(s)
-	return objId
-}
+func DebugMsg(msg string, flag bool) string {
+	if flag {
+		pc, file, line, _ := runtime.Caller(1)
 
-// FilterBsonM 函数接受原始 bson.M 数据和要保留的字段列表，
-// 返回一个新的 bson.M 只包含指定的字段。
-// 示例	keepFields := []string{"name", "email"}
-func FilterBsonM(data bson.M, keepFields []string) bson.M {
-	filteredData := bson.M{}
-	for _, key := range keepFields {
-		if value, ok := data[key]; ok {
-			filteredData[key] = value
-		}
+		s := "\n"
+
+		funcName := fmt.Sprintf("Caller function: %s"+s, runtime.FuncForPC(pc).Name())
+		fileName := fmt.Sprintf("Caller file: %s"+s, file)
+		LineNum := fmt.Sprintf("Caller line: %d"+s, line)
+
+		msg = fmt.Sprintf(s+"%s%s%s%s", funcName, fileName, LineNum, msg)
 	}
-	return filteredData
+
+	return msg
 }

@@ -2,7 +2,7 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-05-08 08:09:45
  * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-05-28 17:00:24
+ * @LastEditTime : 2024-06-04 23:20:22
  * @FilePath     : /v2/go-common-v2-dh-utils/utils_test.go
  * @Description  :
  *
@@ -11,117 +11,69 @@
 package utils
 
 import (
+	"encoding/base64"
+	"strings"
 	"testing"
-
-	dhjson "github.com/lepingbeta/go-common-v2-dh-json"
-	dhlog "github.com/lepingbeta/go-common-v2-dh-log"
-	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
-// 定义一个用于测试的结构体
-type TestStruct struct {
-	Field1 string `bson:"field1"`
-	Field2 int    `bson:"field2"`
-}
+const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 
-// TestStruct2BsonD 测试 Struct2BsonD 函数
-func TestStruct2BsonD(t *testing.T) {
-	tests := []struct {
-		name    string
-		doc     interface{}
-		want    bson.D
-		wantErr bool
-	}{
-		{
-			name: "ValidStruct",
-			doc: TestStruct{
-				Field1: "value1",
-				Field2: 123,
-			},
-			want: bson.D{
-				{Key: "field1", Value: "value1"},
-				{Key: "field2", Value: 123},
-			},
-			wantErr: false,
-		},
-		{
-			name:    "NilInput",
-			doc:     nil,
-			want:    bson.D{},
-			wantErr: true, // 根据 Marshal 的实现，这里可能是 true 或 false
-		},
+// 测试GenerateAccessID函数
+func TestGenerateAccessID(t *testing.T) {
+	const testIDLength = 16
+	expectedLength := testIDLength
+	actualID, err := GenerateAccessID(expectedLength)
+	if err != nil {
+		t.Errorf("GenerateAccessID returned an error: %v", err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := Struct2BsonD(tt.doc)
-			if (err != nil) != tt.wantErr {
-				dhlog.Error("Struct2BsonD() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			s1 := dhjson.JsonEncodeIndent(got)
-			s2 := dhjson.JsonEncodeIndent(tt.want)
-			dhlog.Info(s1)
-			dhlog.Info(s2)
-			if s1 == s2 {
-				// dhlog.Error("", got)
-				// dhlog.Error("", tt.want)
-				// fmt.Errorf("Struct2BsonD() got = %v, want %v", got, tt.want)
-			}
-		})
+	if len(actualID) != expectedLength {
+		t.Errorf("Expected ID length of %d, but got %d", expectedLength, len(actualID))
 	}
-}
-
-func areBsonDEqual(d1, d2 bson.D) bool {
-	if len(d1) != len(d2) {
-		return false
-	}
-	for i, elem1 := range d1 {
-		elem2 := d2[i]
-		if elem1.Key != elem2.Key || elem1.Value != elem2.Value {
-			return false
+	// 检查生成的Access ID是否只包含字母数字字符
+	for _, char := range actualID {
+		if !strings.ContainsRune(alphanum, char) {
+			t.Errorf("GenerateAccessID contains invalid characters: %c", char)
 		}
 	}
-	return true
 }
 
-// TestFilterBsonM 是测试 FilterBsonM 函数的测试函数
-func TestFilterBsonM(t *testing.T) {
-	// 原始数据
-	data := bson.M{
-		"name":    "John Doe",
-		"age":     30,
-		"email":   "john@example.com",
-		"address": "123 Main St",
+// 测试GenerateAccessSecret函数
+func TestGenerateAccessSecret(t *testing.T) {
+	actualSecret, err := GenerateAccessSecret()
+	if err != nil {
+		t.Errorf("GenerateAccessSecret returned an error: %v", err)
 	}
-
-	// 指定要保留的字段
-	keepFields := []string{"name", "email"}
-
-	// 调用 FilterBsonM 函数
-	filteredData := FilterBsonM(data, keepFields)
-
-	// 期望的结果
-	expected := bson.M{
-		"name":  "John Doe",
-		"email": "john@example.com",
+	// 检查编码后的字符串是否是base64格式
+	// Base64编码的字符串长度是4的倍数
+	if len(actualSecret)%4 != 0 {
+		t.Errorf("Expected base64 encoded string length to be a multiple of 4, but got %d", len(actualSecret))
 	}
-
-	// 使用 assert 包来验证结果
-	assert.Equal(t, expected, filteredData, "Filtered data does not match expected result")
-
-	// 测试不包含任何字段的情况
-	noFields := []string{}
-	filteredDataEmpty := FilterBsonM(data, noFields)
-	expectedEmpty := bson.M{}
-	assert.Equal(t, expectedEmpty, filteredDataEmpty, "Expected empty bson.M when no fields are specified")
-
-	// 测试包含不存在字段的情况
-	extraFields := []string{"name", "phone"}
-	filteredDataExtra := FilterBsonM(data, extraFields)
-	expected2 := bson.M{
-		"name": "John Doe",
+	// 检查解码后的字节长度是否为32
+	decodedBytes, err := base64.URLEncoding.DecodeString(actualSecret)
+	if err != nil {
+		t.Errorf("Failed to decode base64 string: %v", err)
 	}
-	assert.Equal(t, expected2, filteredDataExtra, "Filtered data should ignore non-existing fields")
+	if len(decodedBytes) != 32 {
+		t.Errorf("Expected decoded byte length of 32, but got %d", len(decodedBytes))
+	}
+}
+
+// BenchmarkGenerateAccessID 基准测试GenerateAccessID函数
+func BenchmarkGenerateAccessID(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, err := GenerateAccessID(16)
+		if err != nil {
+			b.Errorf("GenerateAccessID error: %v", err)
+		}
+	}
+}
+
+// BenchmarkGenerateAccessSecret 基准测试GenerateAccessSecret函数
+func BenchmarkGenerateAccessSecret(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_, err := GenerateAccessSecret()
+		if err != nil {
+			b.Errorf("GenerateAccessSecret error: %v", err)
+		}
+	}
 }

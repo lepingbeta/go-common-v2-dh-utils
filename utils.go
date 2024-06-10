@@ -2,7 +2,7 @@
  * @Author       : Symphony zhangleping@cezhiqiu.com
  * @Date         : 2024-05-08 08:09:45
  * @LastEditors  : Symphony zhangleping@cezhiqiu.com
- * @LastEditTime : 2024-06-07 17:45:41
+ * @LastEditTime : 2024-06-11 00:13:10
  * @FilePath     : /v2/go-common-v2-dh-utils/utils.go
  * @Description  :
  *
@@ -50,8 +50,10 @@ func GenerateAccessSecret() (string, error) {
 	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
-func DebugMsg(msg string, flag bool) string {
-	if flag {
+var DebugMsgFlag = true
+
+func DebugMsg(msg string) string {
+	if DebugMsgFlag {
 		pc, file, line, _ := runtime.Caller(1)
 
 		s := "\n"
